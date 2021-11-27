@@ -212,5 +212,19 @@ void* getLast(){
     return last_allocated;
 }
 
+//Goes before calling function mymalloc/myrealloc/myfree
+void start_clock()
+{
+    clock_t t;
+    t = clock();
+}
 
+//Goes after calling function mymalloc/myrealloc/myfree
+double throughput()
+{
+    start_clock();
+    t = clock() - t;
+    double time_taken = ((double)t)/CLOCKS_PER_SEC;
+    printf("Throughput: %f ops/sec\n", 1000000/time_taken);
+}
   
