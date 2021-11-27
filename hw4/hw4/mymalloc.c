@@ -1,6 +1,8 @@
 #include "mymalloc.h"
+#include <time.h>
 #define CAPACITY 1024*1024
 char heap[CAPACITY];
+clock_t t;
 int algo;
 double total_allocated =0.0;
 double total_space=0.0; 
@@ -215,16 +217,14 @@ void* getLast(){
 //Goes before calling function mymalloc/myrealloc/myfree
 void start_clock()
 {
-    clock_t t;
     t = clock();
 }
 
 //Goes after calling function mymalloc/myrealloc/myfree
 double throughput()
 {
-    start_clock();
     t = clock() - t;
     double time_taken = ((double)t)/CLOCKS_PER_SEC;
-    printf("Throughput: %f ops/sec\n", 1000000/time_taken);
+    return 1000000/time_taken;
 }
   
