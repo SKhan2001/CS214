@@ -5,9 +5,11 @@ int algo;
 double total_allocated =0.0;
 double total_space=0.0; 
 struct block *Block = (void*)heap;
+struct block *freeList = (void*)heap;
 struct block *head = (void*)heap;
 struct block *tail = (void*)heap;
 struct block *last_allocated = (void*)heap;  
+
 void myinit(int allocAlg)
 {
     algo = allocAlg;
@@ -104,19 +106,19 @@ struct block *bestfit(struct block *curr, size_t noOfBytes)
     struct block *temp = curr;
     while ((curr->next) != NULL)
     {
-        if (((temp->size) - noOfBytes) > ((curr->size) - noOfBytes)) curr = temp;
+        if (((temp->size) - noOfBytes) > ((curr->size) - noOfBytes)) temp = curr;
         curr = curr->next;
     }
 
-    if (((curr->size) - noOfBytes) < 0) return NULL;
-    if(curr->next == NULL){
+    if (((temp->size) - noOfBytes) < 0) return NULL;
+    if(temp->next == NULL){
         total_allocated += noOfBytes;
         total_space += noOfBytes;
     } 
     else{
         total_allocated += noOfBytes;
     }
-    return curr;
+    return temp;
 }
 
 void myfree(void *ptr) 
@@ -130,7 +132,6 @@ void myfree(void *ptr)
   }
   block_ptr->free = 1;
   merge();
- 
 }
 
 void *myrealloc(void *ptr, size_t size) 
@@ -145,13 +146,16 @@ void *myrealloc(void *ptr, size_t size)
 
 void mycleanup()
 {
-    while (Block->next != NULL)
+    struct block *temp = head;
+    while (temp->next != NULL)
     {
-        struct block *temp = Block;
-        myfree(Block);
-        Block = temp;
+        temp = temp->next;
+        myfree(temp->prev);
+        
     }
     myfree(Block);
+    total_allocated =0;
+    total_space =0;
 }
 
 void split(struct block *fitting_slot,size_t noOfBytes)
