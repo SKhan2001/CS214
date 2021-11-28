@@ -109,18 +109,11 @@ struct block *bestfit(struct block *curr, size_t noOfBytes)
     while ((curr->next) != NULL)
     {
         if ((((temp->size) - noOfBytes) > ((curr->size) - noOfBytes)) && (curr->free)) 
-            temp = curr;
+            *temp = *curr;
         curr = curr->next;
     }
 
     if (((temp->size) - noOfBytes) < 0) return NULL;
-    if(temp->next == NULL){
-        total_allocated += noOfBytes;
-        total_space += noOfBytes;
-    } 
-    else{
-        total_allocated += noOfBytes;
-    }
     return temp;
 }
 

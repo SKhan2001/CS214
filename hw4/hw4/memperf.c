@@ -12,6 +12,7 @@ int main()
     char *p4 = mymalloc(80);
     char *p5 = mymalloc(60);
     myfree(p2);
+    myfree(p4);
     char *p6 = mymalloc(40);
     printf("%f\n", utilization());
     return 0;
