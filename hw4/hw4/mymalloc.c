@@ -30,6 +30,7 @@ void *mymalloc(size_t noOfBytes)
     if (algo == 0) curr = firstfit(curr, noOfBytes);
     if (algo == 1) curr = nextfit(last_allocated, noOfBytes);
     if (algo == 2) curr = bestfit(curr, noOfBytes);
+
     if((curr->size)==noOfBytes)
     {
         printf("EXACT FIT\n");
@@ -63,7 +64,6 @@ void *mymalloc(size_t noOfBytes)
 
 struct block *firstfit(struct block *curr, size_t noOfBytes)
 {
-    
     while ((curr->next) != NULL)
     {
         if (((curr->size) >= noOfBytes) && (curr->free)) {
@@ -105,10 +105,11 @@ struct block *nextfit(struct block *curr, size_t noOfBytes)
 
 struct block *bestfit(struct block *curr, size_t noOfBytes)
 {
-    struct block *temp = curr;
+    struct block *temp = firstfit(curr, noOfBytes);
     while ((curr->next) != NULL)
     {
-        if (((temp->size) - noOfBytes) > ((curr->size) - noOfBytes)) temp = curr;
+        if ((((temp->size) - noOfBytes) > ((curr->size) - noOfBytes)) && (curr->free)) 
+            temp = curr;
         curr = curr->next;
     }
 
@@ -231,4 +232,5 @@ double throughput()
     double time_taken = ((double)t)/CLOCKS_PER_SEC;
     return 1000000/time_taken;
 }
+
   

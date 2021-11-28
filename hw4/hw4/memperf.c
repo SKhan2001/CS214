@@ -5,7 +5,7 @@
 #include <stdint.h>
 int main()
 {
-    myinit(1);
+    myinit(2);
     char *p1 = mymalloc(20);
     char *p2 = mymalloc(40);
     char *p3 = mymalloc(60);
