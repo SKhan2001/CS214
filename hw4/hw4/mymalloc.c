@@ -18,6 +18,7 @@ void myinit(int allocAlg)
     Block->size = CAPACITY-sizeof(struct block);
     Block->free = 1;
     Block->next = NULL;
+    
 }
 
 
@@ -142,13 +143,18 @@ void *myrealloc(void *ptr, size_t size)
 void mycleanup()
 {
     struct block *temp = head;
+    myfree(temp);
     while (temp->next != NULL)
     {
+        myfree(temp->next);
+        merge();
         temp = temp->next;
-        myfree(temp->prev);
-        
     }
+
     myfree(Block);
+    tail = (void*)heap;
+    head = (void*)heap;
+    last_allocated = head;
     total_allocated =0;
     total_space =0;
 }
@@ -174,6 +180,7 @@ void merge()
         {
             curr->size+=(curr->next->size)+sizeof(struct block);
             curr->next=curr->next->next;
+
         }
         curr=curr->next;
     }
@@ -183,7 +190,7 @@ double total_blocks(){
     return total_allocated; 
 }
 double utilization(){
-    //printf("%f/%f\n", total_allocated,total_space);
+    printf("%f/%f\n", total_allocated,total_space);
     return total_allocated/total_space;
 }
 
@@ -223,6 +230,17 @@ double throughput()
     t = clock() - t;
     double time_taken = ((double)t)/CLOCKS_PER_SEC;
     return 1000000/time_taken;
+}
+
+void printFree(){
+    struct block *block_ptr = head;
+    while(block_ptr->next != NULL){
+        if(block_ptr->free){
+            printf("%p->[%ld]\n", block_ptr, block_ptr->size);
+        }
+        block_ptr = block_ptr->next;
+    }
+
 }
 
   

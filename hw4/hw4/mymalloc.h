@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <assert.h>
+#include <stdlib.h>
 struct block 
 {
   size_t size;
@@ -27,3 +28,4 @@ void* getPrev(void*);
 void* getNext(void*);
 int getSize(void*);
 void* getLast();
+void printFree();

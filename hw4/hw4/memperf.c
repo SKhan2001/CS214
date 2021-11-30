@@ -5,7 +5,7 @@
 #include <stdint.h>
 int main()
 {
-    myinit(0);
+   /* myinit(0);
     char *test1 = mymalloc(1);
     char *test2 = mymalloc(50);
     char *test3 = mymalloc(139);
@@ -14,9 +14,10 @@ int main()
     printf("First fit throughput: %f ops/sec\n", throughput());
     printf("First fit utilization: %f\n", utilization());
     mycleanup();
-
+*/
     myinit(1);
     char *test5 = mymalloc(34);
+    printFree();
     char *test6 = mymalloc(7);
     char *test7 = mymalloc(158);
     myfree(test6);
@@ -27,7 +28,7 @@ int main()
     printf("Next fit utilization: %f\n", utilization());
     mycleanup();
 
-    myinit(2);
+   /* myinit(2);
     char *test10 = mymalloc(80);
     char *test11 = mymalloc(23);
     char *test12 = mymalloc(250);
@@ -35,7 +36,7 @@ int main()
     char *test13 = mymalloc(22);
     printf("Best fit throughput: %f ops/sec\n", throughput());
     printf("Best fit utilization: %f\n", utilization());
-    mycleanup();
+    mycleanup();*/
     
     return 0;
 }       
