@@ -134,8 +134,7 @@ void *myrealloc(void *ptr, size_t size)
 {
     struct block* block_ptr = ptr;
     int temp = size - block_ptr->size;
-    total_allocated += temp;
-    total_space += temp;
+    total_allocated -= temp;
     myfree(ptr);
     return mymalloc(size);
 }
