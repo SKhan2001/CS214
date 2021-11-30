@@ -33,7 +33,7 @@ void *mymalloc(size_t noOfBytes)
 
     if((curr->size)==noOfBytes)
     {
-        printf("EXACT FIT\n");
+        //printf("EXACT FIT\n");
         curr->free=0;
         result=curr;
         total_allocated += noOfBytes;
