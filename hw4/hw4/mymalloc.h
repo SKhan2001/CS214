@@ -31,3 +31,4 @@ void* getLast();
 void printFree();
 double throughput();
 void allocList();
+void start_clock();

@@ -14,6 +14,7 @@ struct block *last_allocated = (void*)heap;
 
 void myinit(int allocAlg)
 {
+    
     algo = allocAlg;
     Block->size = CAPACITY-sizeof(struct block);
     Block->free = 1;
@@ -38,7 +39,7 @@ void *mymalloc(size_t noOfBytes)
         if (algo ==1){
             total_space+= noOfBytes;
         }
-        printf("EXACT FIT\n");
+      //  printf("EXACT FIT\n");
         curr->free=0;
         result=curr;
         total_allocated += noOfBytes;
@@ -47,7 +48,7 @@ void *mymalloc(size_t noOfBytes)
 
     else if((curr->size)>(noOfBytes+sizeof(struct block)))
     {
-        printf("SPLITTING BLOCK\n");
+       // printf("SPLITTING BLOCK\n");
         split(curr,noOfBytes);
         result=curr;
         curr->free = 0;
@@ -130,6 +131,7 @@ struct block *bestfit(struct block *curr, size_t noOfBytes)
 
 void myfree(void *ptr) 
 {
+ 
   if (!ptr) return;
   struct block* block_ptr = ptr;
   total_allocated -= block_ptr->size;
@@ -155,11 +157,13 @@ void mycleanup()
     struct block *temp = head;
     while (temp->next != NULL)
     {
+        temp->free =1;
+        merge();
         temp = temp->next;
-        myfree(temp->prev);
+
     }
-    merge();
     myfree(Block);
+    Block = (void*)heap;
     tail = (void*)heap;
     head = (void*)heap;
     last_allocated = head;
@@ -199,7 +203,7 @@ double total_blocks(){
 }
 double utilization(){
 
-    printf("%f/%f\n", total_allocated,total_space);
+    //printf("%f/%f\n", total_allocated,total_space);
     return total_allocated/total_space;
 }
 
@@ -255,7 +259,7 @@ void allocList(){
     double temp =0;
     while(block_ptr->next != NULL){
         if(!block_ptr->free){
-        printf("%f + %ld\n", temp, block_ptr->size);
+        //printf("%f + %ld\n", temp, block_ptr->size);
         temp += block_ptr->size;
         }
         block_ptr = block_ptr->next;
