@@ -35,6 +35,7 @@ int main()
     char *test12 = mymalloc(2);
     myfree(test11);
     char *test13 = mymalloc(22);
+    allocList();
     printf("Best fit throughput: %f ops/sec\n", throughput());
     printf("Best fit utilization: %f\n", utilization());
     mycleanup();

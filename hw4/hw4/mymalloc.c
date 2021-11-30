@@ -109,17 +109,13 @@ struct block *bestfit(struct block *curr, size_t noOfBytes)
 {
     double tempSpace =0;
     double currSpace =0;
-    struct block *temp = head;
-    if(temp -> next == NULL)return temp;
+    struct block *temp = firstfit(curr, noOfBytes);
+    //if(temp -> next == NULL)return temp;
     while ((curr->next) != NULL)
     {
-        if (temp->size - noOfBytes>=0 && curr->size - noOfBytes >=0){
-            tempSpace = temp->size - noOfBytes;
-            currSpace = curr->size - noOfBytes;
-            if(curr->free&& temp->free){
-                if(currSpace < tempSpace) temp = curr;
-            }
-        } 
+        tempSpace = temp->size - noOfBytes;
+        currSpace = curr->size - noOfBytes;
+        if(curr->free && (currSpace < tempSpace)) temp = curr;
         curr = curr->next;
     }
 
