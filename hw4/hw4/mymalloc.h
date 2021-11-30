@@ -29,3 +29,5 @@ void* getNext(void*);
 int getSize(void*);
 void* getLast();
 void printFree();
+double throughput();
+void allocList();

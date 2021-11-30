@@ -18,7 +18,8 @@ void myinit(int allocAlg)
     Block->size = CAPACITY-sizeof(struct block);
     Block->free = 1;
     Block->next = NULL;
-    
+    heap[CAPACITY];
+
 }
 
 
@@ -106,11 +107,19 @@ struct block *nextfit(struct block *curr, size_t noOfBytes)
 
 struct block *bestfit(struct block *curr, size_t noOfBytes)
 {
-    struct block *temp = firstfit(curr, noOfBytes);
+    double tempSpace =0;
+    double currSpace =0;
+    struct block *temp = head;
+    if(temp -> next == NULL)return temp;
     while ((curr->next) != NULL)
     {
-        if ((((temp->size) - noOfBytes) > ((curr->size) - noOfBytes)) && (curr->free)) 
-            *temp = *curr;
+        if (temp->size - noOfBytes>=0 && curr->size - noOfBytes >=0){
+            tempSpace = temp->size - noOfBytes;
+            currSpace = curr->size - noOfBytes;
+            if(curr->free&& temp->free){
+                if(currSpace < tempSpace) temp = curr;
+            }
+        } 
         curr = curr->next;
     }
 
@@ -143,7 +152,6 @@ void *myrealloc(void *ptr, size_t size)
 void mycleanup()
 {
     struct block *temp = head;
-    myfree(temp);
     while (temp->next != NULL)
     {
         myfree(temp->next);
@@ -190,6 +198,7 @@ double total_blocks(){
     return total_allocated; 
 }
 double utilization(){
+
     printf("%f/%f\n", total_allocated,total_space);
     return total_allocated/total_space;
 }
@@ -229,7 +238,7 @@ double throughput()
 {
     t = clock() - t;
     double time_taken = ((double)t)/CLOCKS_PER_SEC;
-    return 1000000/time_taken;
+    return 10000000/time_taken;
 }
 
 void printFree(){
@@ -240,7 +249,19 @@ void printFree(){
         }
         block_ptr = block_ptr->next;
     }
+}
+void allocList(){
+    struct block *block_ptr = head;
+    double temp =0;
+    while(block_ptr->next != NULL){
+        if(!block_ptr->free){
+        printf("%f + %ld\n", temp, block_ptr->size);
+        temp += block_ptr->size;
+        }
+        block_ptr = block_ptr->next;
+    }
 
 }
+
 
   
