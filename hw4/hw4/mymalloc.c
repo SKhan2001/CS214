@@ -70,7 +70,7 @@ struct block *firstfit(struct block *curr, size_t noOfBytes)
     {
         if (((curr->size) >= noOfBytes) && (curr->free)) {
             if(curr->size == noOfBytes) break;
-            split(curr, noOfBytes);
+             //split(curr, noOfBytes);
             break;
         }
         curr = curr->next;
@@ -150,11 +150,10 @@ void mycleanup()
     struct block *temp = head;
     while (temp->next != NULL)
     {
-        myfree(temp->next);
-        merge();
         temp = temp->next;
+        myfree(temp->prev);
     }
-
+    merge();
     myfree(Block);
     tail = (void*)heap;
     head = (void*)heap;
@@ -184,7 +183,7 @@ void merge()
         {
             curr->size+=(curr->next->size)+sizeof(struct block);
             curr->next=curr->next->next;
-
+            continue;
         }
         curr=curr->next;
     }
@@ -195,7 +194,7 @@ double total_blocks(){
 }
 double utilization(){
 
-    printf("%f/%f\n", total_allocated,total_space);
+    //printf("%f/%f\n", total_allocated,total_space);
     return total_allocated/total_space;
 }
 
