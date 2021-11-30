@@ -35,7 +35,10 @@ void *mymalloc(size_t noOfBytes)
 
     if((curr->size)==noOfBytes)
     {
-        //printf("EXACT FIT\n");
+        if (algo ==1){
+            total_space+= noOfBytes;
+        }
+        printf("EXACT FIT\n");
         curr->free=0;
         result=curr;
         total_allocated += noOfBytes;
@@ -44,7 +47,7 @@ void *mymalloc(size_t noOfBytes)
 
     else if((curr->size)>(noOfBytes+sizeof(struct block)))
     {
-        //printf("SPLITTING BLOCK\n");
+        printf("SPLITTING BLOCK\n");
         split(curr,noOfBytes);
         result=curr;
         curr->free = 0;
@@ -69,8 +72,11 @@ struct block *firstfit(struct block *curr, size_t noOfBytes)
     while ((curr->next) != NULL)
     {
         if (((curr->size) >= noOfBytes) && (curr->free)) {
-            if(curr->size == noOfBytes) break;
-             //split(curr, noOfBytes);
+            if(curr->size == noOfBytes){
+                last_allocated = curr;
+                return curr;
+            }
+            split(curr, noOfBytes);
             break;
         }
         curr = curr->next;
@@ -96,8 +102,7 @@ struct block *nextfit(struct block *curr, size_t noOfBytes)
     {
         if (((curr->size) >= noOfBytes) && (curr->free)) {
             if(curr->size == noOfBytes) break;
-            split(curr, noOfBytes);
-            break;
+            
         }
         curr = curr->next;
     }
@@ -194,7 +199,7 @@ double total_blocks(){
 }
 double utilization(){
 
-    //printf("%f/%f\n", total_allocated,total_space);
+    printf("%f/%f\n", total_allocated,total_space);
     return total_allocated/total_space;
 }
 
