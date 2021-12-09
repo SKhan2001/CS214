@@ -12,6 +12,10 @@
 #include <SDL2/SDL_image.h>
 #include <SDL2/SDL_ttf.h>
 
+#define MAX 80
+#define PORT 12345
+#define SA struct sockaddr
+
 // Dimensions for the drawn grid (should be GRIDSIZE * texture dimensions)
 #define GRID_DRAW_WIDTH 640
 #define GRID_DRAW_HEIGHT 640
@@ -43,10 +47,10 @@ Position playerPosition;
 int score;
 int level;
 int numTomatoes;
-bool moveUp = false;
-bool moveDown = false;
-bool moveLeft = false;
-bool moveRight = false;
+int moveUp = 0;
+int moveDown = 0;
+int moveLeft = 0;
+int moveRight = 0;
 
 bool shouldExit = false;
 
@@ -78,26 +82,26 @@ void handleKeyDown(SDL_KeyboardEvent* event)
         return;
 
     if (event->keysym.scancode == SDL_SCANCODE_Q || event->keysym.scancode == SDL_SCANCODE_ESCAPE)
-        shouldExit = true;
+        shouldExit = 1;
 
     if (event->keysym.scancode == SDL_SCANCODE_UP || event->keysym.scancode == SDL_SCANCODE_W)
-        moveUp = true;
+        moveUp = 1;
 
     if (event->keysym.scancode == SDL_SCANCODE_DOWN || event->keysym.scancode == SDL_SCANCODE_S)
-        moveDown = true;
+        moveDown = 1;
 
     if (event->keysym.scancode == SDL_SCANCODE_LEFT || event->keysym.scancode == SDL_SCANCODE_A)
-        moveLeft = true;
+        moveLeft = 1;
 
     if (event->keysym.scancode == SDL_SCANCODE_RIGHT || event->keysym.scancode == SDL_SCANCODE_D)
-        moveRight = true;
+        moveRight = 1;
 
     else
     {
-        moveUp = false;
-        moveDown = false;
-        moveLeft = false;
-        moveRight - false;
+        moveUp = 0;
+        moveDown = 0;
+        moveLeft = 0;
+        moveRight - 0;
     }
 }
 
@@ -211,7 +215,6 @@ int main(int argc, char* argv[])
     }
 
     playerPosition.x = playerPosition.y = GRIDSIZE / 2;
-    initGrid();
 
     SDL_Window* window = SDL_CreateWindow("Client", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, WINDOW_WIDTH, WINDOW_HEIGHT, 0);
 

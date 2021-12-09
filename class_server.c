@@ -7,13 +7,14 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #define MAX 80
+#define GRIDSIZE 10
 int total_tomatoes =0; 
 char receive[20][20] = {0};
-char grid[10][10];
-bool moveUp = false;
-bool moveDown = false;
-bool moveLeft = false;
-bool moveRight = false;
+//char grid[10][10];
+int moveUp = 0;
+int moveDown = 0;
+int moveLeft = 0;
+int moveRight = 0;
 
 typedef struct
 {
@@ -30,6 +31,10 @@ typedef enum
 TILETYPE grid[GRIDSIZE][GRIDSIZE];
 
 Position playerPosition;
+int score;
+int level;
+int numTomatoes;
+
 struct socket_addr  { 
   uint16_t        sin_family;  /* Protocol family (always AF_INET) */ 
   uint16_t        sin_port;    /* Port num in network byte order */ 
