@@ -6,7 +6,9 @@
 #include <arpa/inet.h>
 #include <sys/socket.h>
 #include <sys/types.h>
+#define MAX 80
 int total_tomatoes =0; 
+
 struct player{
     char player_ID[10];
     int x_position; 
@@ -18,6 +20,33 @@ struct socket_addr  {
   struct in_addr  sin_addr;    /* IP addr in network byte order */ 
   unsigned char   sin_zero[8]; /* Pad to sizeof(struct sockaddr) */ 
 }; 
+
+void func(int sockfd)
+{
+  int array[10][10] = {0};
+  int numArr[3][3];
+    // infinite loop for chat
+
+        // read the message from client and copy it in buffer
+        read(sockfd, array, sizeof(array));
+        // print buffer which contains the client contents
+        bzero(array, MAX);
+        for(int i = 0; i < 3; i++){
+            for(int j = 0; j < 3; j++){
+                
+                int temp;
+                array[i][j] =1;
+                numArr[i][j] = array[i][j];
+            }
+    
+        }  
+        // and send that buffer to client
+        write(sockfd, numArr, sizeof(numArr));
+   
+        // if msg contains "Exit" then server exit and chat ended.
+        
+}
+
 int main(int argc, char* argv[]){
   int sockfd, connfd, len; 
   unsigned int port = atoi(argv[1]);
@@ -60,4 +89,8 @@ int main(int argc, char* argv[]){
   }
   else 
     printf("Server accepted data!\n");
+
+    func(connfd);
+
+    close(sockfd);
 }
