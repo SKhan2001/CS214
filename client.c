@@ -1,40 +1,37 @@
-#include <stdio.h>
-#include <stdbool.h>
-#include <time.h>
 #include <netdb.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
 #define MAX 80
+#define PORT 12345
 #define SA struct sockaddr
-
+int arr[3][3] = {0};
 void func(int sockfd)
 {
-    char buff[MAX];
-    int n;
-    for (;;) {
-        bzero(buff, sizeof(buff));
-        printf("Enter the string : ");
-        fflush(stderr);
-        n = 0;
-        while ((buff[n++] = getchar()) != '\n')
-            ;
-        write(sockfd, buff, sizeof(buff));
-        bzero(buff, sizeof(buff));
-        read(sockfd, buff, sizeof(buff));
-        printf("From Server : %s", buff);
-        if ((strncmp(buff, "exit", 4)) == 0) {
+        bzero(arr, sizeof(arr));
+        printf("Sending 2d Array\n");
+        write(sockfd, arr, sizeof(arr));
+        bzero(arr, sizeof(arr));
+        read(sockfd, arr, sizeof(arr));
+        printf("From server!\n");
+        for(int i = 0; i < 3; i++){
+            for(int j = 0; j < 3; j++)
+                 printf("%d ", arr[i][j]);
+            printf("\n");
+        }        
             printf("Client Exit...\n");
-            break;
-        }
-    }
 }
-
-int main(int argc, char argv[])
+   
+int main()
 {
+    printf("Array before server!\n");
+    for(int i =0; i < 3; i++){
+        for(int j =0; j < 3; j++)
+            printf("%d ", arr[i][j]);
+        printf("\n");
+    }
     int sockfd, connfd;
-    int port = atoi(argv[1]);
     struct sockaddr_in servaddr, cli;
    
     // socket create and varification
@@ -50,7 +47,7 @@ int main(int argc, char argv[])
     // assign IP, PORT
     servaddr.sin_family = AF_INET;
     servaddr.sin_addr.s_addr = inet_addr("127.0.0.1");
-    servaddr.sin_port = htons(port);
+    servaddr.sin_port = htons(PORT);
    
     // connect the client socket to server socket
     if (connect(sockfd, (SA*)&servaddr, sizeof(servaddr)) != 0) {
@@ -60,12 +57,9 @@ int main(int argc, char argv[])
     else
         printf("connected to the server..\n");
    
+    // function for chat
     func(sockfd);
-
-    
    
     // close the socket
     close(sockfd);
-
-   
 }
