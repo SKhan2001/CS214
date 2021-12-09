@@ -21,8 +21,6 @@ void func(int sockfd)
             printf("\n");
         }        
             printf("Client Exit...\n");
-           
-    
 }
    
 int main()
