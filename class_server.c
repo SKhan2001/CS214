@@ -66,11 +66,11 @@ void func(int sockfd)
 {
     while(1)
     {
-        clientInput(sockfd);
-        handleKeyDown();
-
         bzero(grid, sizeof(grid));
         read(sockfd, grid, sizeof(grid));
+
+        clientInput(sockfd);
+        handleKeyDown();
 
         bzero(grid, sizeof(grid));
         write(sockfd, grid, sizeof(grid));
