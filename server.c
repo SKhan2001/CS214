@@ -123,7 +123,6 @@ int main(int argc, char* argv[]){
             exit(EXIT_FAILURE);
           }
           char *message = "Welcome to multithread!";
-          write()
           puts("Welcome message sent successfully!\n");
 
           //add new socket to array of sockets
