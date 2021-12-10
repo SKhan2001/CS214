@@ -69,7 +69,7 @@ int main(int argc, char* argv[]){
   //populate struct
   servaddr.sin_family = AF_INET;
   servaddr.sin_port = htons(port);
-
+  
   //binding socket to ip address
   if((bind(sockfd, (SA*)&servaddr, sizeof(servaddr)))!= 0){
     printf("Socket failed binding\n");
@@ -123,6 +123,7 @@ int main(int argc, char* argv[]){
             exit(EXIT_FAILURE);
           }
           char *message = "Welcome to multithread!";
+          
           puts("Welcome message sent successfully!\n");
 
           //add new socket to array of sockets
