@@ -8,7 +8,7 @@
 #include <string.h>
 #include <netdb.h>
 #define MAX 80
-#define PORT 12345
+
 #define SA struct sockaddr
 
 
@@ -24,6 +24,8 @@
 
 // Number of cells vertically/horizontally in the grid
 #define GRIDSIZE 10
+char server_grid[10][10];
+
 
 typedef struct
 {
@@ -58,10 +60,8 @@ void initGrid()
 {
     for (int i = 0; i < GRIDSIZE; i++) {
         for (int j = 0; j < GRIDSIZE; j++) {
-            double r = rand01();
-            if (r < 0.1) {
+            if (server_grid[i][j] ==  't') {
                 grid[i][j] = TILE_TOMATO;
-                numTomatoes++;
             }
             else
                 grid[i][j] = TILE_GRASS;
@@ -71,12 +71,8 @@ void initGrid()
     // force player's position to be grass
     if (grid[playerPosition.x][playerPosition.y] == TILE_TOMATO) {
         grid[playerPosition.x][playerPosition.y] = TILE_GRASS;
-        numTomatoes--;
     }
 
-    // ensure grid isn't empty
-    while (numTomatoes == 0)
-        initGrid();
 }
 
 void initSDL()
@@ -184,10 +180,36 @@ void processInputs(int sockfd)
 		}
 	}
 }
-
-void receiveData(int sockfd)
+void convertTo2D(char* input)
 {
-    recv(sockfd, &grid, sizeof(grid), 0);
+    char result[GRIDSIZE][GRIDSIZE];
+    int ctr = 0;
+    for (int i = 0; i<GRIDSIZE; i++)
+    {
+        for (int j = 0; j<GRIDSIZE; j++)
+        {
+            server_grid[i][j] = input[ctr];
+            ctr++;
+        }
+    }
+}
+
+void receiveData(int tempfd)
+{
+    char temp[GRIDSIZE * GRIDSIZE] ; 
+    if(recv(tempfd, &temp, sizeof(temp),0)){
+        printf("Error\n");
+        return;
+    }
+    convertTo2D(temp);
+    bzero(tempfd, &temp);
+    for(int i =0; i < 10; i++){
+        for(int j =0; j < 10; j++){
+            printf("%c ", server_grid[i][j]);
+        }
+        printf("\n");
+    }
+    initGrid();
 }
 
 void drawGrid(SDL_Renderer* renderer, SDL_Texture* grassTexture, SDL_Texture* tomatoTexture, SDL_Texture* playerTexture)
@@ -247,9 +269,28 @@ void drawUI(SDL_Renderer* renderer)
 int main(int argc, char* argv[])
 {
     int sockfd, connfd;
+    int PORT = atoi(argv[1]);
     struct sockaddr_in servaddr, cli; 
+     //socket creation and verification
+    sockfd = socket(AF_INET, SOCK_STREAM, 0);
+    if(sockfd == -1){
+        printf("socket creation failed...\n");
+    }
+    else 
+        printf("Socket successfully created...\n");
+    bzero(&servaddr, sizeof(servaddr));
+    
+    //populate struct
+    servaddr.sin_family = AF_INET;
+    servaddr.sin_addr.s_addr = inet_addr("127.0.0.1");
+    servaddr.sin_port = htons(PORT);
+    if(connect(sockfd, (SA*)&servaddr, sizeof(servaddr))!=0){
+        printf("Connection with the server failed...\n");
+        exit(0);
+    }
+    else printf("Connected to the server...\n");
+    
     srand(time(NULL));
-
     level = 1;
 
     initSDL();
@@ -261,7 +302,8 @@ int main(int argc, char* argv[])
     }
 
     playerPosition.x = playerPosition.y = GRIDSIZE / 2;
-    initGrid();
+    printf("ABOUT TO ENTER RECEIVEDATA\n");
+    receiveData(sockfd);
 
     SDL_Window* window = SDL_CreateWindow("Client", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, WINDOW_WIDTH, WINDOW_HEIGHT, 0);
 
@@ -282,24 +324,7 @@ int main(int argc, char* argv[])
     SDL_Texture *tomatoTexture = IMG_LoadTexture(renderer, "resources/tomato.png");
     SDL_Texture *playerTexture = IMG_LoadTexture(renderer, "resources/player.png");
 
-    //socket creation and verification
-    sockfd = socket(AF_INET, SOCK_STREAM, 0);
-    if(sockfd == -1){
-        printf("socket creation failed...\n");
-    }
-    else 
-        printf("Socket successfully created...\n");
-    bzero(&servaddr, sizeof(servaddr));
-    
-    //populate struct
-    servaddr.sin_family = AF_INET;
-    servaddr.sin_addr.s_addr = inet_addr("127.0.0.1");
-    servaddr.sin_port = htons(PORT);
-    if(connect(sockfd, (SA*)&servaddr, sizeof(servaddr))!=0){
-        printf("Connection with the server failed...\n");
-        exit(0);
-    }
-    else printf("Connected to the server...\n");
+   
     // main game loop
     while (!shouldExit) {
         SDL_SetRenderDrawColor(renderer, 0, 105, 6, 255);
