@@ -16,16 +16,12 @@ void* thread_handler(void*);
 char server_grid[10][10];
 unsigned int port;
 
-
-
 struct socket_addr  { 
   uint16_t        sin_family;  /* Protocol family (always AF_INET) */ 
   uint16_t        sin_port;    /* Port num in network byte order */ 
   struct in_addr  sin_addr;    /* IP addr in network byte order */ 
   unsigned char   sin_zero[8]; /* Pad to sizeof(struct sockaddr) */ 
 }; 
-
-
 
 void readInputs(int sockfd){
   for(;;){
@@ -34,13 +30,11 @@ void readInputs(int sockfd){
     if(strcmp(buff, "Q") == 0) break;
     printf("%s\n", buff);
     bzero(&buff, sizeof(buff));
-
   }
-
 }
 
 void readGrid(int sockfd){
-  
+
   read(sockfd, &server_grid, sizeof(server_grid));
   for(int i =0; i <10; i++){
     for(int j =0; j < 10; j++){

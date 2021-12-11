@@ -185,6 +185,11 @@ void processInputs(int sockfd)
 	}
 }
 
+void receiveData(int sockfd)
+{
+    rcv(sockfd, &grid, sizeof(grid), 0);
+}
+
 void drawGrid(SDL_Renderer* renderer, SDL_Texture* grassTexture, SDL_Texture* tomatoTexture, SDL_Texture* playerTexture)
 {
     SDL_Rect dest;
@@ -301,6 +306,7 @@ int main(int argc, char* argv[])
         SDL_RenderClear(renderer);
 
         processInputs(sockfd);
+        receiveData(sockfd);
 
         drawGrid(renderer, grassTexture, tomatoTexture, playerTexture);
         drawUI(renderer);
