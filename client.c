@@ -187,7 +187,7 @@ void processInputs(int sockfd)
 
 void receiveData(int sockfd)
 {
-    rcv(sockfd, &grid, sizeof(grid), 0);
+    recv(sockfd, &grid, sizeof(grid), 0);
 }
 
 void drawGrid(SDL_Renderer* renderer, SDL_Texture* grassTexture, SDL_Texture* tomatoTexture, SDL_Texture* playerTexture)
