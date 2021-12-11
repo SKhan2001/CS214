@@ -1,3 +1,5 @@
+#include "csapp.h"
+#include <semaphore.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -6,26 +8,16 @@
 #include <arpa/inet.h>
 #include <sys/socket.h>
 #include <sys/types.h>
-#include <semaphore.h>
 #include <pthread.h>
-#define MAX 100
+#define MAX 4
 void readInputs(int);
-void* reader(void*);
-void* writer(void*);
-int total_tomatoes =0; 
-sem_t x,y;
-pthread_t tid;
-pthread_t writerthreads[100];
-pthread_t readerthreads[100];
-int readercount = 0;
+void readGrid(int);
+void* thread_handler(void*);
+char server_grid[10][10];
+unsigned int port;
 
 
 
-struct player{
-    char player_ID[10];
-    int x_position; 
-    int y_position;
-};
 struct socket_addr  { 
   uint16_t        sin_family;  /* Protocol family (always AF_INET) */ 
   uint16_t        sin_port;    /* Port num in network byte order */ 
@@ -33,50 +25,7 @@ struct socket_addr  {
   unsigned char   sin_zero[8]; /* Pad to sizeof(struct sockaddr) */ 
 }; 
 
-void* reader(void* param){
 
-  //lock the semaphore
-  sem_wait(&x);
-  readercount++;
-
-  if(readercount ==1)
-    sem_wait(&y);
-  
-  //Unlock the semaphore 
-  sem_post(&x);
-
-  printf("\n%d reader is inside",readercount);
-
-  //lock the semaphore 
-  sem_wait(&x);
-  readercount--;
-
-  if(readercount==0){
-    sem_post(&y);
-  }
-
-  //lock the semaphore
-  sem_post(&x);
-
-  printf("\n%dReader is leaving", readercount +1);
-  pthread_exit(NULL);
-
-}
-
-void* writer(void* param){
-  printf("\nWriter is trying to enter");
-
-  //Lock the semaphore
-  sem_wait(&y);
-
-  printf("\nWriter has entered");
-
-  sem_post(&y);
-
-  printf("\nWriter is leaving");
-  pthread_exit(NULL);
-
-}
 
 void readInputs(int sockfd){
   for(;;){
@@ -90,14 +39,33 @@ void readInputs(int sockfd){
 
 }
 
+void readGrid(int sockfd){
+  
+  read(sockfd, &server_grid, sizeof(server_grid));
+  for(int i =0; i <10; i++){
+    for(int j =0; j < 10; j++){
+      printf("%c ", server_grid[i][j]);
+    }
+    printf("\n");
+  }
+  bzero(&server_grid, sizeof(server_grid));
+
+
+}
+
+void* thread_handler(void* thread){
+   
+  printf("handler\n");
+
+}
+
 
 int main(int argc, char* argv[]){
-  int sockfd, connfd, len; 
-  unsigned int port = atoi(argv[1]);
+  int sockfd, connfd, len,newsocket; 
+  port = atoi(argv[1]);
   struct socket_addr servaddr, cli; 
   typedef struct sockaddr SA;
-
-  
+  pthread_t tid[4];
   //creating a socket and verifying if it connected
   sockfd = socket(AF_INET, SOCK_STREAM, 0);
   if(sockfd == -1){
@@ -111,10 +79,9 @@ int main(int argc, char* argv[]){
   //populate struct
   servaddr.sin_family = AF_INET;
   servaddr.sin_port = htons(port);
-  servaddr.sin_addr.s_addr = htonl(INADDR_ANY);  
+  servaddr.sin_addr.s_addr = inet_addr("127.0.0.1");  
 
-
-  //binding socket to ip address
+    //binding socket to ip address
   if((bind(sockfd, (SA*)&servaddr, sizeof(servaddr)))!= 0){
     printf("Socket failed binding\n");
     exit(0);
@@ -129,58 +96,19 @@ int main(int argc, char* argv[]){
   else 
     printf("server is listening!\n");
   len = sizeof(cli);
-  
-  //accept data from client
-
-   pthread_t tid[60];
- 
-    int i = 0;
- 
-    while (1) {
-        addr_size = sizeof(serverStorage);
- 
-        // Extract the first
-        // connection in the queue
-        newSocket = accept(serverSocket,
-                           (struct sockaddr*)&serverStorage,
-                           &addr_size);
-        int choice = 0;
-        recv(newSocket,
-             &choice, sizeof(choice), 0);
- 
-        if (choice == 1) {
-            // Creater readers thread
-            if (pthread_create(&readerthreads[i++], NULL,
-                               reader, &newSocket)
-                != 0)
- 
-                // Error in creating thread
-                printf("Failed to create thread\n");
-        }
-        else if (choice == 2) {
-            // Create writers thread
-            if (pthread_create(&writerthreads[i++], NULL,
-                               writer, &newSocket)
-                != 0)
- 
-                // Error in creating thread
-                printf("Failed to create thread\n");
-        }
- 
-        if (i >= 50) {
-            // Update i
-            i = 0;
- 
-            while (i < 50) {
-                pthread_join(writerthreads[i++],
-                             NULL);
-                pthread_join(readerthreads[i++],
-                             NULL);
-            }
-            i = 0;
-        }
+  int i =0; 
+  while(1){
+    //accept call creates a new socket for the income connection
+    newsocket = accept(sockfd, (SA*)&cli, &len);
+    if(pthread_create(&tid[i++],NULL,thread_handler,&newsocket)!=0){
+      printf("Failed to create thread\n");
     }
-  readInputs(connfd);
-  printf("Thanks for playing!\n");
+    if(i >=4) break;
+
+  }
+  
+
+  
+  printf("Thanks for playing!\n");  
   close(sockfd);
 } 
