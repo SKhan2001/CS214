@@ -132,9 +132,53 @@ int main(int argc, char* argv[]){
   
   //accept data from client
 
-  connfd = accept(sockfd, (SA*)&cli, &len);
-    if(connfd < 0){
-      exit(0);
+   pthread_t tid[60];
+ 
+    int i = 0;
+ 
+    while (1) {
+        addr_size = sizeof(serverStorage);
+ 
+        // Extract the first
+        // connection in the queue
+        newSocket = accept(serverSocket,
+                           (struct sockaddr*)&serverStorage,
+                           &addr_size);
+        int choice = 0;
+        recv(newSocket,
+             &choice, sizeof(choice), 0);
+ 
+        if (choice == 1) {
+            // Creater readers thread
+            if (pthread_create(&readerthreads[i++], NULL,
+                               reader, &newSocket)
+                != 0)
+ 
+                // Error in creating thread
+                printf("Failed to create thread\n");
+        }
+        else if (choice == 2) {
+            // Create writers thread
+            if (pthread_create(&writerthreads[i++], NULL,
+                               writer, &newSocket)
+                != 0)
+ 
+                // Error in creating thread
+                printf("Failed to create thread\n");
+        }
+ 
+        if (i >= 50) {
+            // Update i
+            i = 0;
+ 
+            while (i < 50) {
+                pthread_join(writerthreads[i++],
+                             NULL);
+                pthread_join(readerthreads[i++],
+                             NULL);
+            }
+            i = 0;
+        }
     }
   readInputs(connfd);
   printf("Thanks for playing!\n");
