@@ -1,4 +1,3 @@
-#include "csapp.h"
 #include <semaphore.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -20,6 +19,7 @@ unsigned int port;
 int total_tomatoes =0;
 int connections =0; 
 int sockfd;
+int newsocket;
 char new[100];
 pthread_t pthread_readers[10];
 int level=0;
@@ -66,10 +66,10 @@ void readGrid(){
 
 
 void singleArray(){
-  
+  int ctr = 0;
   for(int i =0; i <10; i++){
       for(int j =0; j<10; j++){
-        new[i] = server_grid[i][j];
+        new[ctr++] = server_grid[i][j];
         printf("%c ", new[i]);
       }
         printf("\n");
@@ -78,7 +78,7 @@ void singleArray(){
 }
 void* thread_handler(void* thread){
       int temp = atoi(thread);
-      temp = socket(AF_INET, SOCK_STREAM,0);
+      //temp = socket(AF_INET, SOCK_STREAM,0);
 
       for(int i =0 ; i < 10; i++){
         if(server_grid[0][i] == 'p') continue;
@@ -97,10 +97,8 @@ void* thread_handler(void* thread){
       //readGrid();
       singleArray();
       printf("sending grid\n");
-      send(sockfd, new, strlen(new),0);
-      memset(new, 0, 100);
-
-
+      send(newsocket, new, strlen(new),0);
+      //memset(new, 0, 100);
 }
 
 // get a random value in the range [0, 1]
@@ -138,7 +136,7 @@ void initgrid(){
 
 int main(int argc, char* argv[]){
   initgrid();
-  int connfd, len,newsocket; 
+  int connfd, len; 
   port = atoi(argv[1]);
   struct socket_addr servaddr, cli; 
   typedef struct sockaddr SA;

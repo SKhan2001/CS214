@@ -7,6 +7,10 @@
 #include <sys/socket.h>
 #include <string.h>
 #include <netdb.h>
+#include <pthread.h>
+#include <semaphore.h>
+#include <arpa/inet.h>
+#include <unistd.h>
 #define MAX 80
 
 #define SA struct sockaddr
@@ -25,6 +29,7 @@
 // Number of cells vertically/horizontally in the grid
 #define GRIDSIZE 10
 char server_grid[10][10];
+char new[100];
 int master_socket; 
 
 
@@ -238,11 +243,55 @@ void drawUI(SDL_Renderer* renderer)
     SDL_DestroyTexture(levelTexture);
 }
 
+void doubleArray(){
+  int ctr = 0;
+  for(int i =0; i <10; i++){
+      for(int j =0; j<10; j++){
+        server_grid[i][j] = new[ctr];
+        printf("%c ", new[i]);
+      }
+        printf("\n");
+
+  }
+}
+
+void* clienthread(void* args)
+{
+    int client_request = *((int*)args);
+    int network_socket;
+
+    network_socket = socket(AF_INET, SOCK_STREAM, 0);
+
+    struct sockaddr_in server_address;
+    server_address.sin_family = AF_INET;
+    server_address.sin_addr.s_addr = INADDR_ANY;
+    server_address.sin_port = htons(42069);
+
+    int connection_status = connect(network_socket, (struct sockaddr*)&server_address, sizeof(server_address));
+
+    if (connection_status < 0)
+    {
+        printf("Error\n");
+        return 0;
+    }
+
+    printf("Connection established\n");
+
+    recv(network_socket, &new, sizeof(char)*10*10, 0);
+    doubleArray();
+
+    close(network_socket);
+    pthread_exit(NULL);
+
+    return 0;
+}
+
 
 int main(int argc, char* argv[])
 {
    
     int connfd;
+    pthread_t tid;
     int PORT = atoi(argv[1]);
     struct sockaddr_in servaddr, cli; 
      //socket creation and verification
@@ -270,9 +319,11 @@ int main(int argc, char* argv[])
     level = 1;
 
     initSDL();
-    char new[100];
+
+    pthread_create(&tid, NULL, clienthread, &new);
+
     printf("Ready to receive grid\n");
-    recv(master_socket, &new, 100*sizeof(char),0);
+    //recv(master_socket, &new, 100*sizeof(char),0);
     printf("%s\n",new);
        
     initGrid();
