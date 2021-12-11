@@ -14,12 +14,21 @@
 void readInputs(int);
 void readGrid();
 void* thread_handler(void*);
-void convertTo1D(char**, int);
+void singleArray();
 char server_grid[10][10];
 unsigned int port;
 int total_tomatoes =0;
-int total_connected =0; 
-
+int connections =0; 
+int sockfd;
+char new[100];
+pthread_t pthread_readers[10];
+int level=0;
+typedef struct
+{
+    int x;
+    int y;
+} Position;
+Position player[4];
 
 
 struct socket_addr  { 
@@ -56,25 +65,41 @@ void readGrid(){
 }
 
 
-void convertTo1D(char** input, int tempsock)
-{
-    char result[GRIDSIZE*GRIDSIZE];
-    int ctr = 0;
-    for (int i = 0; i<GRIDSIZE; i++)
-    {
-        for (int j = 0; j<GRIDSIZE; j++)
-        {
-            result[ctr] = input[i][j];
-            ctr++;
-        }
-    }
-    //send(tempsock, result, sizeof(result)+1,0);
-}
+void singleArray(){
+  
+  for(int i =0; i <10; i++){
+      for(int j =0; j<10; j++){
+        new[i] = server_grid[i][j];
+        printf("%c ", new[i]);
+      }
+        printf("\n");
 
+  }
+}
 void* thread_handler(void* thread){
-      total_connected++;
-      convertTo1D(server_grid, thread);
+      int temp = atoi(thread);
+      temp = socket(AF_INET, SOCK_STREAM,0);
+
+      for(int i =0 ; i < 10; i++){
+        if(server_grid[0][i] == 'p') continue;
+        if (server_grid[0][i] == 't'){
+          server_grid[0][i] = 'p';
+          total_tomatoes--;
+          player[connections].x = 0;
+          player[connections++].y = i;
+          break;
+         }
+        server_grid[0][i] = 'p';
+        player[connections].x = 0;
+        player[connections++].y = i;
+        break;
+      }
+      //readGrid();
+      singleArray();
       printf("sending grid\n");
+      send(sockfd, new, strlen(new),0);
+      memset(new, 0, 100);
+
 
 }
 
@@ -84,7 +109,11 @@ double rand01()
     return (double) rand() / (double) RAND_MAX;
 }
 
-void updatedgrid(){
+void updatedgrid(char move, int sockfd){
+  if(move == 'w'){
+    
+
+  }
 
 
 }
@@ -103,12 +132,13 @@ void initgrid(){
         }
     }
     while(total_tomatoes <1)initgrid();
+    level++;
+
   }
 
 int main(int argc, char* argv[]){
   initgrid();
-  readGrid();
-  int sockfd, connfd, len,newsocket; 
+  int connfd, len,newsocket; 
   port = atoi(argv[1]);
   struct socket_addr servaddr, cli; 
   typedef struct sockaddr SA;
@@ -144,13 +174,11 @@ int main(int argc, char* argv[]){
     printf("server is listening!\n");
   len = sizeof(cli);
   int i =0; 
-  while(1){
-    //accept call creates a new socket for the income connection
-    newsocket = accept(sockfd, (SA*)&cli, &len);
-    if(pthread_create(&tid[i++],NULL,thread_handler,&newsocket)!=0){
+  while(newsocket = accept(sockfd, (SA*)&cli, &len)){
+
+   if(pthread_create(&tid[i++],NULL,thread_handler,&newsocket)!=0){
       printf("Failed to create thread\n");
     }
-    if(i >=4) break;
 
   }
   

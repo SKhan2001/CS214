@@ -25,6 +25,7 @@
 // Number of cells vertically/horizontally in the grid
 #define GRIDSIZE 10
 char server_grid[10][10];
+int master_socket; 
 
 
 typedef struct
@@ -180,37 +181,8 @@ void processInputs(int sockfd)
 		}
 	}
 }
-void convertTo2D(char* input)
-{
-    char result[GRIDSIZE][GRIDSIZE];
-    int ctr = 0;
-    for (int i = 0; i<GRIDSIZE; i++)
-    {
-        for (int j = 0; j<GRIDSIZE; j++)
-        {
-            server_grid[i][j] = input[ctr];
-            ctr++;
-        }
-    }
-}
 
-void receiveData(int tempfd)
-{
-    char temp[GRIDSIZE * GRIDSIZE] ; 
-    if(recv(tempfd, &temp, sizeof(temp),0)){
-        printf("Error\n");
-        return;
-    }
-    convertTo2D(temp);
-    bzero(tempfd, &temp);
-    for(int i =0; i < 10; i++){
-        for(int j =0; j < 10; j++){
-            printf("%c ", server_grid[i][j]);
-        }
-        printf("\n");
-    }
-    initGrid();
-}
+
 
 void drawGrid(SDL_Renderer* renderer, SDL_Texture* grassTexture, SDL_Texture* tomatoTexture, SDL_Texture* playerTexture)
 {
@@ -266,14 +238,16 @@ void drawUI(SDL_Renderer* renderer)
     SDL_DestroyTexture(levelTexture);
 }
 
+
 int main(int argc, char* argv[])
 {
-    int sockfd, connfd;
+   
+    int connfd;
     int PORT = atoi(argv[1]);
     struct sockaddr_in servaddr, cli; 
      //socket creation and verification
-    sockfd = socket(AF_INET, SOCK_STREAM, 0);
-    if(sockfd == -1){
+    master_socket = socket(AF_INET, SOCK_STREAM, 0);
+    if(master_socket == -1){
         printf("socket creation failed...\n");
     }
     else 
@@ -284,16 +258,25 @@ int main(int argc, char* argv[])
     servaddr.sin_family = AF_INET;
     servaddr.sin_addr.s_addr = inet_addr("127.0.0.1");
     servaddr.sin_port = htons(PORT);
-    if(connect(sockfd, (SA*)&servaddr, sizeof(servaddr))!=0){
+    if(connect(master_socket, (SA*)&servaddr, sizeof(servaddr))!=0){
         printf("Connection with the server failed...\n");
         exit(0);
     }
     else printf("Connected to the server...\n");
+    int i =0; 
+    
     
     srand(time(NULL));
     level = 1;
 
     initSDL();
+    char new[100];
+    printf("Ready to receive grid\n");
+    recv(master_socket, &new, 100*sizeof(char),0);
+    printf("%s\n",new);
+       
+    initGrid();
+
 
     font = TTF_OpenFont("resources/Burbank-Big-Condensed-Bold-Font.otf", HEADER_HEIGHT);
     if (font == NULL) {
@@ -302,8 +285,6 @@ int main(int argc, char* argv[])
     }
 
     playerPosition.x = playerPosition.y = GRIDSIZE / 2;
-    printf("ABOUT TO ENTER RECEIVEDATA\n");
-    receiveData(sockfd);
 
     SDL_Window* window = SDL_CreateWindow("Client", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, WINDOW_WIDTH, WINDOW_HEIGHT, 0);
 
@@ -327,11 +308,11 @@ int main(int argc, char* argv[])
    
     // main game loop
     while (!shouldExit) {
+        char cli_grid[10][10];
         SDL_SetRenderDrawColor(renderer, 0, 105, 6, 255);
         SDL_RenderClear(renderer);
-
-        processInputs(sockfd);
-        receiveData(sockfd);
+        
+        processInputs(master_socket);
 
         drawGrid(renderer, grassTexture, tomatoTexture, playerTexture);
         drawUI(renderer);
