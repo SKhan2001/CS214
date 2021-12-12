@@ -7,10 +7,6 @@
 #include <sys/socket.h>
 #include <string.h>
 #include <netdb.h>
-#include <pthread.h>
-#include <semaphore.h>
-#include <arpa/inet.h>
-#include <unistd.h>
 #define MAX 80
 
 #define SA struct sockaddr
@@ -29,9 +25,9 @@
 // Number of cells vertically/horizontally in the grid
 #define GRIDSIZE 10
 char server_grid[10][10];
-char new[100];
 int master_socket; 
-
+char new[10][10];
+int PORT;
 
 typedef struct
 {
@@ -49,12 +45,22 @@ TILETYPE grid[GRIDSIZE][GRIDSIZE];
 
 Position playerPosition;
 int score;
-int level;
+uint32_t level;
 int numTomatoes;
 
 bool shouldExit = false;
 
 TTF_Font* font;
+
+void readGrid(){
+for(int i =0; i < 10; i++){
+    for(int j =0; j<10; j++){
+        printf("%c ", server_grid[i][j]);
+    }
+    printf("\n");
+}
+
+}
 
 // get a random value in the range [0, 1]
 double rand01()
@@ -67,10 +73,16 @@ void initGrid()
     for (int i = 0; i < GRIDSIZE; i++) {
         for (int j = 0; j < GRIDSIZE; j++) {
             if (server_grid[i][j] ==  't') {
-                grid[i][j] = TILE_TOMATO;
+                grid[j][i] = TILE_TOMATO;
+                numTomatoes;
+            }
+            else if(server_grid[i][j] =='p'){
+                grid[j][i] = TILE_GRASS;
+                playerPosition.x = j;
+                playerPosition.y =i;
             }
             else
-                grid[i][j] = TILE_GRASS;
+                grid[j][i] == TILE_GRASS;
         }
     }
 
@@ -129,38 +141,38 @@ void moveTo(int x, int y)
 
 void handleKeyDown(SDL_KeyboardEvent* event, int sockfd)
 {
-    char *move[1];
+    char move;
     // ignore repeat events if key is held down
     if (event->repeat)
         return;
 
     if (event->keysym.scancode == SDL_SCANCODE_Q || event->keysym.scancode == SDL_SCANCODE_ESCAPE){
         shouldExit = true;
-        move[0] = 'Q';
+        move = 'Q';
         write(sockfd, move, sizeof(move)+1);
     }
 
     if (event->keysym.scancode == SDL_SCANCODE_UP || event->keysym.scancode == SDL_SCANCODE_W){
-        move[0] = 'w';
+        move = 'w';
         write(sockfd, move, sizeof(move)+1);        
         moveTo(playerPosition.x, playerPosition.y - 1);
         
     }
 
     if (event->keysym.scancode == SDL_SCANCODE_DOWN || event->keysym.scancode == SDL_SCANCODE_S){
-        move[0] = 's';
+        move = 's';
         write(sockfd, move, sizeof(move)+1);   
         moveTo(playerPosition.x, playerPosition.y + 1);
         
     }
     if (event->keysym.scancode == SDL_SCANCODE_LEFT || event->keysym.scancode == SDL_SCANCODE_A){
-        move[0] = 'a';
+        move = 'a';
         write(sockfd, move, sizeof(move)+1);   
         moveTo(playerPosition.x - 1, playerPosition.y);
         
     }
     if (event->keysym.scancode == SDL_SCANCODE_RIGHT || event->keysym.scancode == SDL_SCANCODE_D){
-        move[0] = 'd';
+        move = 'd';
         write(sockfd, move, sizeof(move)+1);   
         moveTo(playerPosition.x + 1, playerPosition.y);
         
@@ -244,89 +256,74 @@ void drawUI(SDL_Renderer* renderer)
 }
 
 void doubleArray(){
-  int ctr = 0;
-  for(int i =0; i <10; i++){
-      for(int j =0; j<10; j++){
-        server_grid[i][j] = new[ctr];
-        printf("%c ", new[i]);
-      }
-        printf("\n");
+    int ctr =0;
+    for(int i =0; i < 10; i++){
+        for(int j =0; j < 10; j++){
+            server_grid[i][j] = new[ctr];
+            printf("%c ", new[ctr]);
+            ctr++;
+        }
+        printf(" \n");
+    }
 
-  }
+
 }
 
-void* clienthread(void* args)
+void* clienthread(void *args)
 {
+    uint32_t temp;
     int client_request = *((int*)args);
     int network_socket;
 
     network_socket = socket(AF_INET, SOCK_STREAM, 0);
-
     struct sockaddr_in server_address;
     server_address.sin_family = AF_INET;
-    server_address.sin_addr.s_addr = INADDR_ANY;
-    server_address.sin_port = htons(42069);
-
-    int connection_status = connect(network_socket, (struct sockaddr*)&server_address, sizeof(server_address));
-
-    if (connection_status < 0)
-    {
-        printf("Error\n");
-        return 0;
-    }
-
-    printf("Connection established\n");
-
-    recv(network_socket, &new, sizeof(char)*10*10, 0);
-    doubleArray();
-
-    close(network_socket);
-    pthread_exit(NULL);
-
-    return 0;
-}
-
-
-int main(int argc, char* argv[])
-{
-   
-    int connfd;
-    pthread_t tid;
-    int PORT = atoi(argv[1]);
-    struct sockaddr_in servaddr, cli; 
-     //socket creation and verification
-    master_socket = socket(AF_INET, SOCK_STREAM, 0);
-    if(master_socket == -1){
-        printf("socket creation failed...\n");
-    }
-    else 
-        printf("Socket successfully created...\n");
-    bzero(&servaddr, sizeof(servaddr));
-    
-    //populate struct
-    servaddr.sin_family = AF_INET;
-    servaddr.sin_addr.s_addr = inet_addr("127.0.0.1");
-    servaddr.sin_port = htons(PORT);
-    if(connect(master_socket, (SA*)&servaddr, sizeof(servaddr))!=0){
+    server_address.sin_addr.s_addr = inet_addr("127.0.0.1");
+    server_address.sin_port = htons(PORT);
+     if(connect(network_socket, (SA*)&server_address, sizeof(server_address))!=0){
         printf("Connection with the server failed...\n");
         exit(0);
     }
     else printf("Connected to the server...\n");
+    
+    printf("Connected to server...\n");
+    read(network_socket, &server_grid, 100);
+    readGrid();
+    initGrid();
+    
+    
+    
+    read(network_socket, &temp, sizeof(temp));
+    level = ntohl(temp);
+    printf("%d\n", level);
+    printf("We made it out!\n");
+    bzero(&temp, sizeof(temp));
+    close(network_socket);
+    pthread_exit(NULL);
+
+    return 0;
+
+
+
+}
+int main(int argc, char* argv[])
+{
+   
+    int connfd;
+    PORT = atoi(argv[1]);
+    struct sockaddr_in servaddr, cli; 
+    pthread_t tid;
+    pthread_create(&tid,NULL,clienthread, &new);
+    
+
     int i =0; 
     
     
     srand(time(NULL));
-    level = 1;
+    
 
     initSDL();
-
-    pthread_create(&tid, NULL, clienthread, &new);
-
-    printf("Ready to receive grid\n");
-    //recv(master_socket, &new, 100*sizeof(char),0);
-    printf("%s\n",new);
        
-    initGrid();
 
 
     font = TTF_OpenFont("resources/Burbank-Big-Condensed-Bold-Font.otf", HEADER_HEIGHT);
@@ -335,7 +332,7 @@ int main(int argc, char* argv[])
         exit(EXIT_FAILURE);
     }
 
-    playerPosition.x = playerPosition.y = GRIDSIZE / 2;
+    
 
     SDL_Window* window = SDL_CreateWindow("Client", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, WINDOW_WIDTH, WINDOW_HEIGHT, 0);
 
@@ -359,7 +356,6 @@ int main(int argc, char* argv[])
    
     // main game loop
     while (!shouldExit) {
-        char cli_grid[10][10];
         SDL_SetRenderDrawColor(renderer, 0, 105, 6, 255);
         SDL_RenderClear(renderer);
         
