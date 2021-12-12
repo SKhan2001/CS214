@@ -13,25 +13,39 @@
 #include <pthread.h>
 #define MAX 4
 #define GRIDSIZE 10
-char readInputs(int);
+void readInputs();
 void readGrid();
 void* thread_handler(void*);
 void singleArray();
 void placePlayer();
+void pop_struct();
+void initgrid();
 char server_grid[10][10];
+pthread_t tid[4];
 unsigned int port;
 int total_tomatoes =0;
-int consumed_tomatoes;
+int consumed_tomatoes =0;
 int connections =0; 
 int sockfd;
-int newsocket;
+int newsocket, len;
 char new[100];
 pthread_t pthread_readers[10];
 uint32_t level=1;
 int current_level =1;
 int game_over =0;
+struct socket_addr servaddr, cli; 
+
+struct gameInfo{
+  int total_score; 
+  int total_tomatoes;
+  int game_level; 
+  char game_grid[10][10]; 
+};
+struct gameInfo game;
+
 typedef struct
 {
+    int id;
     int x;
     int y;
 } Position;
@@ -45,19 +59,33 @@ struct socket_addr  {
   unsigned char   sin_zero[8]; /* Pad to sizeof(struct sockaddr) */ 
 }; 
 
+void send_struct(){
+  for(int i =0 ; i < connections; i++){
+    sendto(tid[i], &game, sizeof(struct gameInfo),0, (struct sockaddr *)&servaddr, sizeof(len));
+  }
+}
 
+void pop_struct(){
+  game.total_score = consumed_tomatoes;
+  game.total_tomatoes = total_tomatoes;
+  game.game_level = level;
+  memcpy(game.game_grid, server_grid, sizeof(server_grid));
 
-char readInputs(int readsock){
-    for(;;){
+}
+
+void readInputs(){
+    
+    for(int i =0 ; i < connections; i++){
         char buff;
-        recv(newsocket, &buff, sizeof(buff),0);
-        updatedgrid(buff);
+        recv(tid[i], &buff, sizeof(buff),0);
+        updatedgrid(buff, i);
         bzero(&buff, sizeof(buff));
-        readGrid();
         if(current_level < level){
           current_level++;
-          break;
+          initgrid();
         }
+        pop_struct();
+        send_struct();
     }
     
 }
@@ -70,6 +98,7 @@ void readGrid(){
     }
     printf("\n");
   }
+
 
 
 }
@@ -103,11 +132,15 @@ void placePlayer(int thread){
 
 }
 void* thread_handler(void* thread){
+      player->id = connections;
       int temp = atoi(thread);
       placePlayer(temp);
       uint32_t converted_level = htonl(level);
-      if(write(newsocket, server_grid, sizeof(char)*100)<0) perror("Error sending\n");
-      if(write(newsocket, &converted_level, sizeof(converted_level))<0) perror("Error sending\n");
+      //if(write(newsocket, server_grid, sizeof(char)*100)<0) perror("Error sending\n");
+      //if(write(newsocket, &converted_level, sizeof(converted_level))<0) perror("Error sending\n");
+      pop_struct();
+      sendto(newsocket, &game, sizeof(struct gameInfo),0, (struct sockaddr *)&servaddr, sizeof(servaddr));
+
      
 }
 
@@ -119,8 +152,8 @@ double rand01()
 
 
 //START OF UPDATED GRID
-void updatedgrid(char move){
-  int i =0; 
+void updatedgrid(char move, int p){
+  int i =p; 
   if(move == 'w'|| move =='W'){
     if(player[i].y ==0) return;
     if(server_grid[player[i].x][player[i].y+1] == 'p')return;
@@ -132,7 +165,6 @@ void updatedgrid(char move){
       server_grid[player[i].x][player[i].y] == 'g';
       player[i].y++;
       server_grid[player[i].x][player[i].y] == 'p';
-      readGrid();
       return;
     }
   }
@@ -147,7 +179,6 @@ void updatedgrid(char move){
           server_grid[player[i].x][player[i].y] == 'g';
           player[i].x--;
           server_grid[player[i].x][player[i].y] == 'p';
-          readGrid();
           return;
       }
     }
@@ -162,7 +193,6 @@ void updatedgrid(char move){
           server_grid[player[i].x][player[i].y] == 'g';
           player[i].y--;
           server_grid[player[i].x][player[i].y] == 'p';
-          readGrid();
           return;
       }
     }
@@ -177,7 +207,6 @@ void updatedgrid(char move){
           server_grid[player[i].x][player[i].y] == 'g';
           player[i].x++;
           server_grid[player[i].x][player[i].y] == 'p';
-          readGrid();
           return;
       }
     if(move == 'q'||move == 'Q'){
@@ -193,7 +222,7 @@ void initgrid(){
   for (int i = 0; i < 10; i++) {
         for (int j = 0; j < 10; j++) {
             double r = rand01();
-            if (r < 0.1) {
+            if (r < .4) {
                 server_grid[i][j] = 't';
                 total_tomatoes++;
             }
@@ -210,11 +239,11 @@ void initgrid(){
 
 int main(int argc, char* argv[]){
   initgrid();
-  int connfd, len; 
+  int connfd; 
   port = atoi(argv[1]);
-  struct socket_addr servaddr, cli; 
   typedef struct sockaddr SA;
-  pthread_t tid[4];
+  
+  srand(time(NULL));
   //creating a socket and verifying if it connected
   sockfd = socket(AF_INET, SOCK_STREAM, 0);
   if(sockfd == -1){
@@ -241,11 +270,12 @@ int main(int argc, char* argv[]){
   while(!game_over){
     if(i <4){ 
         newsocket = accept(sockfd, (SA*)&cli, &len);
+        connections++;
         if(pthread_create(&tid[i],NULL,thread_handler,&newsocket)!=0){
         }
   
     }
-    readInputs(newsocket);
+    readInputs();
     }
   
 

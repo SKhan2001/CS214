@@ -52,6 +52,22 @@ bool shouldExit = false;
 
 TTF_Font* font;
 
+struct gameInfo{
+  int total_score; 
+  int total_tomatoes;
+  uint32_t game_level; 
+  char game_grid[10][10]; 
+};
+struct gameInfo game; 
+
+
+void pop_global(){
+    score = game.total_score;
+    numTomatoes = game.total_tomatoes;
+    level = game.game_level; 
+    memcpy(server_grid, game.game_grid, sizeof(game.game_grid));
+}
+
 void readGrid(){
 for(int i =0; i < 10; i++){
     for(int j =0; j<10; j++){
@@ -286,18 +302,13 @@ void* clienthread(void *args)
     }
     else printf("Connected to the server...\n");
     
-    printf("Connected to server...\n");
-    read(network_socket, &server_grid, 100);
+    recvfrom(network_socket, &game, sizeof(struct gameInfo), 0, (struct sockaddr*)&server_address, sizeof(server_address));
+    pop_global();
     readGrid();
     initGrid();
     
     
     
-    read(network_socket, &temp, sizeof(temp));
-    level = ntohl(temp);
-    printf("%d\n", level);
-    printf("We made it out!\n");
-    bzero(&temp, sizeof(temp));
     close(network_socket);
     pthread_exit(NULL);
 
