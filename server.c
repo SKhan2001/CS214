@@ -1,4 +1,3 @@
-#include "csapp.h"
 #include <semaphore.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -13,16 +12,15 @@
 #include <pthread.h>
 #define MAX 4
 #define GRIDSIZE 10
-void readInputs(int);
+void readInputs();
 void readGrid();
 void* thread_handler(void*);
 void singleArray();
 void placePlayer();
 void pop_struct();
 void initgrid();
-void updatedgrid(char, int);
 char server_grid[10][10];
-pthread_t tid[4];
+pthread_t tid;
 unsigned int port;
 int total_tomatoes =0;
 int consumed_tomatoes =0;
@@ -40,18 +38,18 @@ struct gameInfo{
   int total_score; 
   int total_tomatoes;
   int game_level; 
-  char game_grid[10][10]; 
+  char game_grid[10][10];
 };
 struct gameInfo game;
 
 typedef struct
 {
+    int connfd;
     int id;
     int x;
     int y;
 } Position;
-Position player[4];
-
+Position *player[4];
 
 struct socket_addr  { 
   uint16_t        sin_family;  /* Protocol family (always AF_INET) */ 
@@ -60,9 +58,15 @@ struct socket_addr  {
   unsigned char   sin_zero[8]; /* Pad to sizeof(struct sockaddr) */ 
 }; 
 
+pthread_mutex_t clients_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+pthread_mutex_t topic_mutex = PTHREAD_MUTEX_INITIALIZER;
+
 void send_struct(){
-  for(int i =0 ; i < connections; i++){
-    sendto(tid[i], &game, sizeof(struct gameInfo),0, (struct sockaddr *)&servaddr, sizeof(len));
+  for(int i = 0 ; i < connections; i++){
+    //printf("%d\n", player[i]->connfd);
+    sendto(player[i]->connfd, &game, sizeof(struct gameInfo),0, (struct sockaddr *)&servaddr, sizeof(len));
+    //printf("here!\n");
   }
 }
 
@@ -71,13 +75,14 @@ void pop_struct(){
   game.total_tomatoes = total_tomatoes;
   game.game_level = level;
   memcpy(game.game_grid, server_grid, sizeof(server_grid));
-
 }
 
-void readInputs(int temp){
+void readInputs(){
+    
+    for(int i =0 ; i < connections; i++){
         char buff;
-        recv(temp, &buff, sizeof(buff),0);
-        updatedgrid(buff, connections);
+        recv(player[i]->connfd, &buff, sizeof(buff),0);
+        updatedgrid(buff, i);
         bzero(&buff, sizeof(buff));
         if(current_level < level){
           current_level++;
@@ -85,8 +90,7 @@ void readInputs(int temp){
         }
         pop_struct();
         send_struct();
-        readGrid();
-  
+    }
     
 }
 
@@ -98,9 +102,6 @@ void readGrid(){
     }
     printf("\n");
   }
-
-
-
 }
 
 
@@ -114,35 +115,44 @@ void singleArray(){
   printf("%s\n", new);
 }
 
-void placePlayer(int thread){
+void placePlayer(Position *player){
    for(int i =0 ; i < 10; i++){
         if(server_grid[0][i] == 'p') continue;
         if (server_grid[0][i] == 't'){
           server_grid[0][i] = 'p';
           total_tomatoes--;
-          player[connections].x = 0;
-          player[connections].y = i;
+          player->x = 0;
+          player->y = i;
           break;
          }
          server_grid[0][i] = 'p';
-        player[connections].x = 0;
-        player[connections].y = i;
+        player->x = 0;
+        player->y = i;
         break;
       }
 
 }
 void* thread_handler(void* thread){
-      player->id = connections;
-      int temp = atoi(thread);
+      Position *temp = (Position*)thread;
+      int rlen;
+      char buff;
+
+      printf("Player %d:\nconnfd: %d\nx: %d\ny: %d\n\n", temp->id, temp->connfd, temp->x, temp->y);
       placePlayer(temp);
-      uint32_t converted_level = htonl(level);
-      //if(write(newsocket, server_grid, sizeof(char)*100)<0) perror("Error sending\n");
-      //if(write(newsocket, &converted_level, sizeof(converted_level))<0) perror("Error sending\n");
-       
+      pop_struct();
+      send_struct();
+      readGrid();
+
+      while (!game_over)
+      {
+        rlen = read(temp->connfd, buff, sizeof(buff));
+        printf("input bool: %d\n", rlen);
+        updatedgrid(buff, temp->id);
         pop_struct();
-        sendto(newsocket, &game, sizeof(struct gameInfo),0, (struct sockaddr *)&servaddr, sizeof(servaddr));
-        
-     
+        send_struct();
+
+        printf("player %d: %c", temp->id, buff); 
+      }
 }
 
 // get a random value in the range [0, 1]
@@ -155,90 +165,67 @@ double rand01()
 //START OF UPDATED GRID
 void updatedgrid(char move, int p){
   int i =p; 
-  if(move == 'a'|| move =='A'){
-    if(player[i].y ==0) return;
-    if(server_grid[player[i].x][player[i].y-1] == 'p')return;
-    if(server_grid[player[i].x][player[i].y-1] == 't'){
+  if(move == 'w'|| move =='W'){
+    if(player[i]->y ==0) return;
+    if(server_grid[player[i]->x][player[i]->y+1] == 'p')return;
+    if(server_grid[player[i]->x][player[i]->y+1] == 't'){
       total_tomatoes--;
       consumed_tomatoes++;
       if(consumed_tomatoes>=20)game_over=1;
       if(total_tomatoes <1)level++;
-      server_grid[player[i].x][player[i].y] = 'g';
-      player[i].y--;
-      server_grid[player[i].x][player[i].y] = 'p';
+      server_grid[player[i]->x][player[i]->y] == 'g';
+      player[i]->y++;
+      server_grid[player[i]->x][player[i]->y] == 'p';
       return;
     }
-    else{
-        server_grid[player[i].x][player[i].y] = 'g';
-        player[i].y--;
-        server_grid[player[i].x][player[i].y] = 'p';
-
-    }
   }
-    if(move == 'w'|| move == 'W'){
-      if(player[i].x ==0) return;
-      if(server_grid[player[i].x+1][player[i].y] == 'p')return;
-      if(server_grid[player[i].x+1][player[i].y] == 't'){
+    if(move == 'a'|| move == 'A'){
+      if(player[i]->x ==0) return;
+      if(server_grid[player[i]->x-1][player[i]->y] == 'p')return;
+      if(server_grid[player[i]->x-1][player[i]->y] == 't'){
           total_tomatoes--;
           consumed_tomatoes++;
           if(consumed_tomatoes>=20)game_over=1;
           if(total_tomatoes <1)level++;
-          server_grid[player[i].x][player[i].y] = 'g';
-          player[i].x++;
-          server_grid[player[i].x][player[i].y] = 'p';
+          server_grid[player[i]->x][player[i]->y] == 'g';
+          player[i]->x--;
+          server_grid[player[i]->x][player[i]->y] == 'p';
           return;
       }
-      else{
-        server_grid[player[i].x][player[i].y] = 'g';
-        server_grid[player[i].x+1][player[i].y] = 'p';
-        player[i].x++;
-      }
-      
-    }
-    if(move =='d'|| move =='D'){
-      if(player[i].y ==9) return;
-      if(server_grid[player[i].x][player[i].y+1] == 'p')return;
-      if(server_grid[player[i].x][player[i].y+1] == 't'){
-          total_tomatoes--;
-          consumed_tomatoes++;
-          if(consumed_tomatoes>=20)game_over=1;
-          if(total_tomatoes <1)level++;
-          server_grid[player[i].x][player[i].y] = 'g';
-          player[i].y++;
-          server_grid[player[i].x][player[i].y] = 'p';
-          return;
-      }
-      else{
-        server_grid[player[i].x][player[i].y] = 'g';
-        server_grid[player[i].x][player[i].y+1] = 'p';
-        player[i].y++;
-      }
-
     }
     if(move =='s'|| move =='S'){
-      if(player[i].x ==9) return;
-      if(server_grid[player[i].x+1][player[i].y] == 'p')return;
-      if(server_grid[player[i].x+1][player[i].y] == 't'){
+      if(player[i]->y ==9) return;
+      if(server_grid[player[i]->x][player[i]->y-1] == 'p')return;
+      if(server_grid[player[i]->x][player[i]->y-1] == 't'){
           total_tomatoes--;
           consumed_tomatoes++;
           if(consumed_tomatoes>=20)game_over=1;
           if(total_tomatoes <1)level++;
-          server_grid[player[i].x][player[i].y] = 'g';
-          player[i].x++;
-          server_grid[player[i].x][player[i].y] = 'p';
+          server_grid[player[i]->x][player[i]->y] == 'g';
+          player[i]->y--;
+          server_grid[player[i]->x][player[i]->y] == 'p';
           return;
       }
-      else{
-        server_grid[player[i].x][player[i].y] = 'g';
-        server_grid[player[i].x+1][player[i].y] = 'p';
-        player[i].x++;
-      }
     }
+    if(move =='d'|| move =='D'){
+      if(player[i]->x ==9) return;
+      if(server_grid[player[i]->x+1][player[i]->y] == 'p')return;
+      if(server_grid[player[i]->x+1][player[i]->y] == 't'){
+          total_tomatoes--;
+          consumed_tomatoes++;
+          if(consumed_tomatoes>=20)game_over=1;
+          if(total_tomatoes <1)level++;
+          server_grid[player[i]->x][player[i]->y] == 'g';
+          player[i]->x++;
+          server_grid[player[i]->x][player[i]->y] == 'p';
+          return;
+      }
     if(move == 'q'||move == 'Q'){
       game_over=1;
       return;
     }
     
+    }
   }//END OF UPDATEDGRID
 
 
@@ -262,7 +249,7 @@ void initgrid(){
   }
 
 int main(int argc, char* argv[]){
-  initgrid();
+  //initgrid();
   int connfd; 
   port = atoi(argv[1]);
   typedef struct sockaddr SA;
@@ -282,4 +269,36 @@ int main(int argc, char* argv[]){
   servaddr.sin_addr.s_addr = inet_addr("127.0.0.1");  
 
     //binding socket to ip address
+  if((bind(sockfd, (SA*)&servaddr, sizeof(servaddr)))!= 0){
+    exit(0);
+  }
+  //listening and verifing
+  if((listen(sockfd, 100))!=0){
+    exit(0);
+  }
+
+  len = sizeof(servaddr);
+  int i =0; 
+  initgrid();
+
+  while(!game_over){
+    if(i <4){ 
+        newsocket = accept(sockfd, (SA*)&servaddr, &len);
+        connections++;
+
+        Position *temp = (Position*)malloc(sizeof(Position));
+        temp->connfd = newsocket;
+        temp->id = connections;
+        temp->y = connections - 1;
+        temp->x = 0;
+        
+        player[connections-1] = temp;
+        pthread_create(&tid,NULL,thread_handler,(void*)temp);
+    }
+    }
   
+
+  
+  printf("Thanks for playing!\n");  
+  close(sockfd);
+} 

@@ -28,6 +28,7 @@ char server_grid[10][10];
 int master_socket; 
 char new[10][10];
 int PORT;
+char move;
 
 typedef struct
 {
@@ -157,39 +158,40 @@ void moveTo(int x, int y)
 
 void handleKeyDown(SDL_KeyboardEvent* event, int sockfd)
 {
-    char move;
     // ignore repeat events if key is held down
     if (event->repeat)
         return;
 
+    move = NULL;
+
     if (event->keysym.scancode == SDL_SCANCODE_Q || event->keysym.scancode == SDL_SCANCODE_ESCAPE){
         shouldExit = true;
         move = 'Q';
-        write(sockfd, move, sizeof(move)+1);
+        //write(sockfd, move, sizeof(move));
     }
 
     if (event->keysym.scancode == SDL_SCANCODE_UP || event->keysym.scancode == SDL_SCANCODE_W){
         move = 'w';
-        write(sockfd, move, sizeof(move)+1);        
+        //write(sockfd, move, sizeof(move));        
         //moveTo(playerPosition.x, playerPosition.y - 1);
         
     }
 
     if (event->keysym.scancode == SDL_SCANCODE_DOWN || event->keysym.scancode == SDL_SCANCODE_S){
         move = 's';
-        write(sockfd, move, sizeof(move)+1);   
+        //write(sockfd, move, sizeof(move));   
         //moveTo(playerPosition.x, playerPosition.y + 1);
         
     }
     if (event->keysym.scancode == SDL_SCANCODE_LEFT || event->keysym.scancode == SDL_SCANCODE_A){
         move = 'a';
-        write(sockfd, move, sizeof(move)+1);   
+        //write(sockfd, move, sizeof(move));   
         //moveTo(playerPosition.x - 1, playerPosition.y);
         
     }
     if (event->keysym.scancode == SDL_SCANCODE_RIGHT || event->keysym.scancode == SDL_SCANCODE_D){
         move = 'd';
-        write(sockfd, move, sizeof(move)+1);   
+        //write(sockfd, move, sizeof(move));   
         //moveTo(playerPosition.x + 1, playerPosition.y);
         
     }
@@ -215,8 +217,6 @@ void processInputs(int sockfd)
 	}
 }
 
-
-
 void drawGrid(SDL_Renderer* renderer, SDL_Texture* grassTexture, SDL_Texture* tomatoTexture, SDL_Texture* playerTexture)
 {
     SDL_Rect dest;
@@ -224,16 +224,31 @@ void drawGrid(SDL_Renderer* renderer, SDL_Texture* grassTexture, SDL_Texture* to
         for (int j = 0; j < GRIDSIZE; j++) {
             dest.x = 64 * i;
             dest.y = 64 * j + HEADER_HEIGHT;
-            SDL_Texture* texture = (grid[i][j] == TILE_GRASS) ? grassTexture : tomatoTexture;
+
+            SDL_Texture* texture;
+
+            switch (server_grid[i][j])
+            {
+            case 'g':
+            texture = grassTexture;
+                break;
+            
+            case 't':
+            texture = tomatoTexture;
+                break;
+            
+            case 'p':
+            texture = playerTexture;
+                break;
+            
+            default:
+                break;
+            }
+
             SDL_QueryTexture(texture, NULL, NULL, &dest.w, &dest.h);
             SDL_RenderCopy(renderer, texture, NULL, &dest);
         }
     }
-
-    dest.x = 64 * playerPosition.x;
-    dest.y = 64 * playerPosition.y + HEADER_HEIGHT;
-    SDL_QueryTexture(playerTexture, NULL, NULL, &dest.w, &dest.h);
-    SDL_RenderCopy(renderer, playerTexture, NULL, &dest);
 }
 
 void drawUI(SDL_Renderer* renderer)
@@ -305,45 +320,27 @@ void* clienthread(void *args)
     recvfrom(network_socket, &game, sizeof(struct gameInfo), 0, (struct sockaddr*)&server_address, sizeof(server_address));
     pop_global();
     readGrid();
-    initGrid();
-    
-    
     
     close(network_socket);
     pthread_exit(NULL);
 
     return 0;
-
-
-
 }
+
 int main(int argc, char* argv[])
 {
    
     int connfd;
     PORT = atoi(argv[1]);
     struct sockaddr_in servaddr, cli; 
-    pthread_t tid;
-    pthread_create(&tid,NULL,clienthread, &new);
-    
-
-    int i =0; 
-    
-    
     srand(time(NULL));
-    
-
     initSDL();
-       
-
-
+    
     font = TTF_OpenFont("resources/Burbank-Big-Condensed-Bold-Font.otf", HEADER_HEIGHT);
     if (font == NULL) {
         fprintf(stderr, "Error loading font: %s\n", TTF_GetError());
         exit(EXIT_FAILURE);
     }
-
-    
 
     SDL_Window* window = SDL_CreateWindow("Client", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, WINDOW_WIDTH, WINDOW_HEIGHT, 0);
 
@@ -364,6 +361,24 @@ int main(int argc, char* argv[])
     SDL_Texture *tomatoTexture = IMG_LoadTexture(renderer, "resources/tomato.png");
     SDL_Texture *playerTexture = IMG_LoadTexture(renderer, "resources/player.png");
 
+    uint32_t temp;
+
+    master_socket = socket(AF_INET, SOCK_STREAM, 0);
+    struct sockaddr_in server_address;
+    server_address.sin_family = AF_INET;
+    server_address.sin_addr.s_addr = inet_addr("127.0.0.1");
+    server_address.sin_port = htons(PORT);
+
+     if(connect(master_socket, (SA*)&server_address, sizeof(server_address))!=0){
+        printf("Connection with the server failed...\n");
+        exit(0);
+    }
+    else printf("Connected to the server...\n");
+
+    recvfrom(master_socket, &game, sizeof(struct gameInfo), 0, (struct sockaddr*)&server_address, sizeof(server_address));
+    pop_global();
+    readGrid();
+    printf("total tomatoes -> %d\n", numTomatoes);
    
     // main game loop
     while (!shouldExit) {
@@ -371,6 +386,11 @@ int main(int argc, char* argv[])
         SDL_RenderClear(renderer);
         
         processInputs(master_socket);
+        write(master_socket, move, sizeof(move));
+
+        recvfrom(master_socket, &game, sizeof(struct gameInfo), 0, (struct sockaddr*)&server_address, sizeof(server_address));
+        pop_global();
+        readGrid();
 
         drawGrid(renderer, grassTexture, tomatoTexture, playerTexture);
         drawUI(renderer);
