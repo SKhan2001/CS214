@@ -384,6 +384,9 @@ int main(int argc, char* argv[])
     while (!shouldExit) {
         SDL_SetRenderDrawColor(renderer, 0, 105, 6, 255);
         SDL_RenderClear(renderer);
+        drawGrid(renderer, grassTexture, tomatoTexture, playerTexture);
+        drawUI(renderer);
+        SDL_RenderPresent(renderer);
         
         processInputs(master_socket);
         write(master_socket, move, sizeof(move));
@@ -392,12 +395,7 @@ int main(int argc, char* argv[])
         pop_global();
         readGrid();
 
-        drawGrid(renderer, grassTexture, tomatoTexture, playerTexture);
-        drawUI(renderer);
-
-        SDL_RenderPresent(renderer);
-
-        SDL_Delay(16); // 16 ms delay to limit display to 60 fps
+        //SDL_Delay(16); // 16 ms delay to limit display to 60 fps
     }
 
     // clean up everything

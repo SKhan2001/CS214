@@ -60,14 +60,16 @@ struct socket_addr  {
 
 pthread_mutex_t clients_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-pthread_mutex_t topic_mutex = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t grid_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 void send_struct(){
+  pthread_mutex_lock(&clients_mutex);
   for(int i = 0 ; i < connections; i++){
     //printf("%d\n", player[i]->connfd);
     sendto(player[i]->connfd, &game, sizeof(struct gameInfo),0, (struct sockaddr *)&servaddr, sizeof(len));
     //printf("here!\n");
   }
+  pthread_mutex_unlock(&clients_mutex);
 }
 
 void pop_struct(){
@@ -145,13 +147,15 @@ void* thread_handler(void* thread){
 
       while (!game_over)
       {
-        rlen = read(temp->connfd, buff, sizeof(buff));
-        printf("input bool: %d\n", rlen);
+        pthread_mutex_lock(&grid_mutex);
+
+        read(temp->connfd, buff, sizeof(buff));
+        printf("player %d: %c", temp->id, buff); 
         updatedgrid(buff, temp->id);
         pop_struct();
         send_struct();
 
-        printf("player %d: %c", temp->id, buff); 
+        pthread_mutex_unlock(&grid_mutex);
       }
 }
 
