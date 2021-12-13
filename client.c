@@ -171,26 +171,26 @@ void handleKeyDown(SDL_KeyboardEvent* event, int sockfd)
     if (event->keysym.scancode == SDL_SCANCODE_UP || event->keysym.scancode == SDL_SCANCODE_W){
         move = 'w';
         write(sockfd, move, sizeof(move)+1);        
-        moveTo(playerPosition.x, playerPosition.y - 1);
+        //moveTo(playerPosition.x, playerPosition.y - 1);
         
     }
 
     if (event->keysym.scancode == SDL_SCANCODE_DOWN || event->keysym.scancode == SDL_SCANCODE_S){
         move = 's';
         write(sockfd, move, sizeof(move)+1);   
-        moveTo(playerPosition.x, playerPosition.y + 1);
+        //moveTo(playerPosition.x, playerPosition.y + 1);
         
     }
     if (event->keysym.scancode == SDL_SCANCODE_LEFT || event->keysym.scancode == SDL_SCANCODE_A){
         move = 'a';
         write(sockfd, move, sizeof(move)+1);   
-        moveTo(playerPosition.x - 1, playerPosition.y);
+        //moveTo(playerPosition.x - 1, playerPosition.y);
         
     }
     if (event->keysym.scancode == SDL_SCANCODE_RIGHT || event->keysym.scancode == SDL_SCANCODE_D){
         move = 'd';
         write(sockfd, move, sizeof(move)+1);   
-        moveTo(playerPosition.x + 1, playerPosition.y);
+        //moveTo(playerPosition.x + 1, playerPosition.y);
         
     }
 }
